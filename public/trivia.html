@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia Electrónica</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        body {
+            background-color: #1a0d1a;
+            color: #f8c100;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .circuit-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(30, 10, 30, 0.2),
+                rgba(30, 10, 30, 0.2) 10px,
+                rgba(30, 10, 30, 0.3) 10px,
+                rgba(30, 10, 30, 0.3) 20px
+            );
+            z-index: -1;
+        }
+        
+        .game-container {
+            width: 90%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(to right, #f8c100, #ffdd57);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(248, 193, 0, 0.5);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .question-container {
+            background-color: rgba(30, 10, 30, 0.9);
+            border: 4px solid #f8c100;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            width: 100%;
+            box-shadow: 0 0 20px rgba(248, 193, 0, 0.3);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .circuit-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #f8c100;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(248, 193, 0, 0.7);
+            z-index: 2;
+        }
+        
+        .question-counter {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #ffdd57;
+        }
+        
+        .question {
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            font-weight: 700;
+        }
+        
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .option {
+            background-color: rgba(30, 10, 30, 0.8);
+            border: 4px solid #f8c100;
+            border-radius: 20px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+        }
+        
+        .option-letter {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-right: 15px;
+            color: #ffdd57;
+            display: inline-block;
+            width: 40px;
+            text-align: center;
+        }
+        
+        .option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(248, 193, 0, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+            z-index: -1;
+        }
+        
+        .option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 25px rgba(248, 193, 0, 0.4);
+            border-color: #ffdd57;
+        }
+        
+        .option.selected {
+            border-color: #ff4500;
+            box-shadow: 0 0 30px rgba(255, 69, 0, 0.6);
+            background: rgba(30, 10, 30, 1);
+            transform: scale(1.02);
+        }
+        
+        .option.selected::before {
+            background: radial-gradient(circle, rgba(255, 69, 0, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
+        }
+        
+        .option.selected {
+            color: #ff4500;
+        }
+        
+        .option.correct {
+            border-color: #00ff00;
+            box-shadow: 0 0 40px rgba(0, 255, 0, 0.8);
+            color: #00ff00;
+            animation: correctAnswer 0.5s ease;
+        }
+        
+        .option.incorrect {
+            border-color: #ff0000;
+            box-shadow: 0 0 40px rgba(255, 0, 0, 0.8);
+            color: #ff0000;
+            animation: shake 0.5s ease;
+        }
+        
+        .points-popup {
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #00ff00;
+            z-index: 1000;
+            animation: pointsFloat 1.5s ease-out;
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+        }
+        
+        .score-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .score-counter i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .score-value {
+            background-color: rgba(30, 10, 30, 0.8);
+            border: 3px solid #f8c100;
+            border-radius: 10px;
+            padding: 8px 20px;
+            min-width: 120px;
+            text-align: center;
+            font-size: 1.4rem;
+        }
+        
+        .circuit-line {
+            position: absolute;
+            background-color: #f8c100;
+            opacity: 0.7;
+            z-index: -1;
+        }
+        
+        .h-line {
+            height: 3px;
+            width: 100px;
+        }
+        
+        .v-line {
+            width: 3px;
+            height: 100px;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+                box-shadow: 0 0 5px rgba(248, 193, 0, 0.3);
+            }
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 15px rgba(248, 193, 0, 0.7);
+            }
+            100% {
+                opacity: 0.5;
+                box-shadow: 0 0 5px rgba(248, 193, 0, 0.3);
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        @keyframes correctAnswer {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes pointsFloat {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-50px) scale(1.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-150px) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        .score-pulse {
+            animation: scorePulse 0.8s ease-out;
+        }
+        
+        @keyframes scorePulse {
+            0% { 
+                transform: scale(1); 
+                background-color: rgba(30, 10, 30, 0.8);
+            }
+            50% { 
+                transform: scale(1.2); 
+                background-color: rgba(248, 193, 0, 0.4);
+            }
+            100% { 
+                transform: scale(1); 
+                background-color: rgba(30, 10, 30, 0.8);
+            }
+        }
+        
+        .game-over {
+            text-align: center;
+            background-color: rgba(30, 10, 30, 0.9);
+            border: 3px solid #f8c100;
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 600px;
+            width: 90%;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .game-over h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        
+        .game-over p {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+        
+        .final-score {
+            font-size: 2rem;
+            color: #ffdd57;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @media (max-width: 600px) {
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .question {
+                font-size: 1.2rem;
+            }
+            
+            .options-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .option {
+                font-size: 1.1rem;
+                padding: 20px;
+            }
+            
+            .option-letter {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="circuit-background"></div>
+    
+    <div class="game-container" id="gameContainer">
+        <h1 class="title">TRIVIA ELECTRÓNICA</h1>
+        
+        <div class="question-container">
+            <!-- Nodos de circuito decorativos -->
+            <div class="circuit-node pulse" style="top: 10px; left: 10px;"></div>
+            <div class="circuit-node pulse" style="top: 10px; right: 10px;"></div>
+            <div class="circuit-node pulse" style="bottom: 10px; left: 10px;"></div>
+            <div class="circuit-node pulse" style="bottom: 10px; right: 10px;"></div>
+            
+            <div class="question-counter">Pregunta <span id="currentQuestion">1</span> de <span id="totalQuestions">5</span></div>
+            <div class="question" id="questionText"></div>
+        </div>
+        
+        <div class="options-container" id="optionsContainer">
+            <div class="option" data-index="0">
+                <span class="option-letter">A)</span>
+                <span class="option-text"></span>
+            </div>
+            <div class="option" data-index="1">
+                <span class="option-letter">B)</span>
+                <span class="option-text"></span>
+            </div>
+            <div class="option" data-index="2">
+                <span class="option-letter">C)</span>
+                <span class="option-text"></span>
+            </div>
+            <div class="option" data-index="3">
+                <span class="option-letter">D)</span>
+                <span class="option-text"></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="score-counter">
+        <i class="fas fa-plug"></i>
+        <div class="score-value" id="scoreValue">0 PUNTOS</div>
+    </div>
+    
+    <!-- Elementos decorativos de circuito -->
+    <div class="circuit-node pulse" style="top: 5%; left: 5%;"></div>
+    <div class="circuit-node pulse" style="top: 5%; right: 5%;"></div>
+    <div class="circuit-node pulse" style="bottom: 5%; left: 5%;"></div>
+    <div class="circuit-node pulse" style="bottom: 5%; right: 5%;"></div>
+    
+    <div class="circuit-line h-line pulse" style="top: 10%; left: 0; width: 150px;"></div>
+    <div class="circuit-line v-line pulse" style="top: 0; right: 20%; height: 120px;"></div>
+    <div class="circuit-line h-line pulse" style="bottom: 15%; right: 0; width: 100px;"></div>
+    <div class="circuit-line v-line pulse" style="bottom: 0; left: 15%; height: 100px;"></div>
+    
+    <script>
+        // Preguntas de trivia (reducido a 5 preguntas)
+        const questions = [
+    // Física y electricidad
+    {
+        question: "¿Cuál es la unidad de medida de la resistencia eléctrica?",
+        options: ["Voltio (V)", "Amperio (A)", "Ohmio (Ω)", "Watt (W)"],
+        correct: 2
+    },
+    {
+        question: "¿Qué ley establece que la corriente en un circuito es directamente proporcional al voltaje?",
+        options: ["Ley de Kirchhoff", "Ley de Watt", "Ley de Ohm", "Ley de Faraday"],
+        correct: 2
+    },
+    {
+        question: "¿Qué componente almacena energía eléctrica en un campo magnético?",
+        options: ["Condensador", "Resistor", "Inductor", "Transistor"],
+        correct: 2
+    },
+    {
+        question: "¿Qué dispositivo convierte energía mecánica en energía eléctrica?",
+        options: ["Motor", "Generador", "Transformador", "Batería"],
+        correct: 1
+    },
+    {
+        question: "¿Qué tipo de circuito tiene una sola trayectoria para la corriente?",
+        options: ["Circuito en serie", "Circuito en paralelo", "Circuito mixto", "Circuito abierto"],
+        correct: 0
+    },
+    
+    // Geografía
+    {
+        question: "¿Cuál es la capital de Francia?",
+        options: ["Lyon", "Marsella", "París", "Toulouse"],
+        correct: 2
+    },
+    {
+        question: "¿En qué continente se encuentra el desierto del Sahara?",
+        options: ["Asia", "África", "Oceanía", "América"],
+        correct: 1
+    },
+    {
+        question: "¿Cuál es el río más largo del mundo?",
+        options: ["Yangtsé", "Nilo", "Amazonas", "Misisipi"],
+        correct: 2
+    },
+    {
+        question: "¿Qué país tiene forma de bota?",
+        options: ["Grecia", "España", "Portugal", "Italia"],
+        correct: 3
+    },
+    {
+        question: "¿Cuál es la montaña más alta del mundo?",
+        options: ["K2", "Monte Everest", "Kilimanjaro", "Denali"],
+        correct: 1
+    },
+    
+    // Historia
+    {
+        question: "¿En qué año llegó Cristóbal Colón a América?",
+        options: ["1492", "1500", "1486", "1502"],
+        correct: 0
+    },
+    {
+        question: "¿Quién pintó la Mona Lisa?",
+        options: ["Michelangelo", "Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci"],
+        correct: 3
+    },
+    {
+        question: "¿En qué guerra lucharon los Estados Unidos contra el Vietnam?",
+        options: ["Guerra de Corea", "Guerra de Vietnam", "Guerra del Golfo", "Guerra Fría"],
+        correct: 1
+    },
+    {
+        question: "¿Quién fue el primer hombre en pisar la Luna?",
+        options: ["Buzz Aldrin", "Michael Collins", "Neil Armstrong", "John Glenn"],
+        correct: 2
+    },
+    {
+        question: "¿En qué país comenzó la Revolución Industrial?",
+        options: ["Francia", "Alemania", "Inglaterra", "Estados Unidos"],
+        correct: 2
+    },
+    
+    // Literatura
+    {
+        question: "¿Quién escribió 'Romeo y Julieta'?",
+        options: ["Charles Dickens", "William Shakespeare", "Jane Austen", "Gabriel García Márquez"],
+        correct: 1
+    },
+    {
+        question: "¿Cuál es el personaje principal de 'El Quijote'?",
+        options: ["Sancho Panza", "Don Quijote", "Dulcinea", "Rocinante"],
+        correct: 1
+    },
+    {
+        question: "¿Quién escribió 'Cien años de soledad'?",
+        options: ["Mario Vargas Llosa", "Julio Cortázar", "Gabriel García Márquez", "Pablo Neruda"],
+        correct: 2
+    },
+    {
+        question: "¿Cuál es el hogar de Harry Potter antes de Hogwarts?",
+        options: ["Diagon Alley", "Grimauld Place", "The Burrow", "Privet Drive"],
+        correct: 3
+    },
+    {
+        question: "¿Quién escribió 'El Principito'?",
+        options: ["Albert Camus", "Antoine de Saint-Exupéry", "Jean-Paul Sartre", "Marcel Proust"],
+        correct: 1
+    },
+    
+    // Ciencias
+    {
+        question: "¿Cuál es el planeta más grande del sistema solar?",
+        options: ["Saturno", "Júpiter", "Urano", "Neptuno"],
+        correct: 1
+    },
+    {
+        question: "¿Qué gas respiramos principalmente los humanos?",
+        options: ["Dióxido de carbono", "Oxígeno", "Nitrógeno", "Hidrógeno"],
+        correct: 1
+    },
+    {
+        question: "¿Cuántos huesos tiene el cuerpo humano adulto?",
+        options: ["206", "186", "226", "216"],
+        correct: 0
+    },
+    {
+        question: "¿Cuál es el metal más ligero?",
+        options: ["Aluminio", "Litio", "Magnesio", "Titanio"],
+        correct: 1
+    },
+    {
+        question: "¿Qué vitamina produce tu piel con la luz solar?",
+        options: ["Vitamina A", "Vitamina C", "Vitamina D", "Vitamina E"],
+        correct: 2
+    },
+    
+    // Matemáticas
+    {
+        question: "¿Cuál es el valor de pi (π) redondeado a dos decimales?",
+        options: ["3.14", "3.16", "3.12", "3.18"],
+        correct: 0
+    },
+    {
+        question: "¿Cuánto es 20% de 200?",
+        options: ["20", "40", "30", "50"],
+        correct: 1
+    },
+    {
+        question: "¿Cuál es el resultado de 7 × 8?",
+        options: ["54", "55", "56", "57"],
+        correct: 2
+    },
+    {
+        question: "¿Cuántos lados tiene un hexágono?",
+        options: ["5", "6", "7", "8"],
+        correct: 1
+    },
+    {
+        question: "¿Cuánto es la raíz cuadrada de 64?",
+        options: ["6", "7", "8", "9"],
+        correct: 2
+    },
+    
+    // Deportes
+    {
+        question: "¿En qué deporte se usa un 'puck'?",
+        options: ["Basketball", "Ice Hockey", "Rugby", "Soccer"],
+        correct: 1
+    },
+    {
+        question: "¿Cuántos jugadores tiene un equipo de fútbol en el campo?",
+        options: ["9", "10", "11", "12"],
+        correct: 2
+    },
+    {
+        question: "¿Quién tiene más trofeos de Grand Slam en tenis masculino?",
+        options: ["Roger Federer", "Rafael Nadal", "Novak Djokovic", "Pete Sampras"],
+        correct: 2
+    },
+    {
+        question: "¿En qué país nacieron los Juegos Olímpicos?",
+        options: ["Egipto", "Grecia", "Italia", "Francia"],
+        correct: 1
+    },
+    {
+        question: "¿Qué color es la medalla de tercer lugar en las Olimpiadas?",
+        options: ["Plata", "Oro", "Bronce", "Cobre"],
+        correct: 2
+    },
+    
+    // Entretenimiento
+    {
+        question: "¿Qué película ganó 11 premios Oscar en 1998?",
+        options: ["Titanic", "Gladiator", "The Matrix", "Saving Private Ryan"],
+        correct: 0
+    },
+    {
+        question: "¿Quién es el director de las películas 'Jaws' y 'Jurassic Park'?",
+        options: ["George Lucas", "Steven Spielberg", "Martin Scorsese", "Francis Ford Coppola"],
+        correct: 1
+    },
+    {
+        question: "¿En qué año se lanzó el primer iPhone?",
+        options: ["2006", "2007", "2008", "2009"],
+        correct: 1
+    },
+    {
+        question: "¿Cuál es la red social más utilizada en el mundo?",
+        options: ["Twitter", "Instagram", "Facebook", "LinkedIn"],
+        correct: 2
+    },
+    {
+        question: "¿Quién es la cantante de 'Umbrella' y 'Diamonds'?",
+        options: ["Beyoncé", "Rihanna", "Lady Gaga", "Katy Perry"],
+        correct: 1
+    },
+    
+    // Arte
+    {
+        question: "¿Quién pintó 'La Gioconda'?",
+        options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Michelangelo"],
+        correct: 2
+    },
+    {
+        question: "¿En qué museo se encuentra la Mona Lisa?",
+        options: ["El Prado", "El Louvre", "Museo Metropolitano", "Galería Nacional"],
+        correct: 1
+    },
+    {
+        question: "¿Quién es conocido por sus obras surrealistas con relojes derretidos?",
+        options: ["René Magritte", "Salvador Dalí", "André Breton", "Jean Arp"],
+        correct: 1
+    },
+    {
+        question: "¿Quién pintó 'La noche estrellada'?",
+        options: ["Claude Monet", "Pablo Picasso", "Vincent van Gogh", "Edgar Degas"],
+        correct: 2
+    },
+    {
+        question: "¿Qué artista es famoso por sus pinturas de girasoles?",
+        options: ["Paul Gauguin", "Henri de Toulouse-Lautrec", "Vincent van Gogh", "Paul Cézanne"],
+        correct: 2
+    },
+    
+    // Cultura general
+    {
+        question: "¿Cuántos días tiene un año bisiesto?",
+        options: ["365", "366", "367", "364"],
+        correct: 1
+    },
+    {
+        question: "¿Cuál es la moneda de Japón?",
+        options: ["Won", "Yuan", "Yen", "Dólar"],
+        correct: 2
+    },
+    {
+        question: "¿Cuántas letras tiene el alfabeto español?",
+        options: ["26", "27", "28", "29"],
+        correct: 1
+    },
+    {
+        question: "¿Qué órgano del cuerpo humano filtra la sangre?",
+        options: ["Hígado", "Riñones", "Páncreas", "Bazo"],
+        correct: 1
+    },
+    {
+        question: "¿Cuántas estaciones hay en un año?",
+        options: ["2", "3", "4", "5"],
+        correct: 2
+    },
+    
+    // Tecnología
+    {
+        question: "¿Qué significa la sigla 'URL'?",
+        options: ["Universal Resource Locator", "Uniform Resource Locator", "Universal Rich Link", "Uniform Rich Locator"],
+        correct: 1
+    },
+    {
+        question: "¿Quién fundó Microsoft?",
+        options: ["Steve Jobs", "Bill Gates", "Mark Zuckerberg", "Larry Page"],
+        correct: 1
+    },
+    {
+        question: "¿Qué es HTML?",
+        options: ["Un lenguaje de programación", "Un lenguaje de marcado", "Un tipo de navegador", "Un sistema operativo"],
+        correct: 1
+    },
+    {
+        question: "¿Qué empresa creó el iPhone?",
+        options: ["Samsung", "Nokia", "Apple", "Motorola"],
+        correct: 2
+    },
+    {
+        question: "¿Qué es una 'cookie' en Internet?",
+        options: ["Un virus", "Un archivo para almacenar información", "Un tipo de navegador", "Un programa antivirus"],
+        correct: 1
+    },
+    
+    // Medicina básica
+    {
+        question: "¿Cuál es la temperatura normal del cuerpo humano?",
+        options: ["35.5°C", "36.5°C", "37.5°C", "38.5°C"],
+        correct: 1
+    },
+    {
+        question: "¿Qué tipo de sangre es el donante universal?",
+        options: ["Tipo A", "Tipo B", "Tipo AB", "Tipo O"],
+        correct: 3
+    },
+    {
+        question: "¿Cuántas cámaras tiene el corazón humano?",
+        options: ["2", "3", "4", "5"],
+        correct: 2
+    },
+    {
+        question: "¿Cuál es el músculo más grande del cuerpo humano?",
+        options: ["Bíceps", "Cuádriceps", "Glúteo mayor", "Pectoral"],
+        correct: 2
+    },
+    {
+        question: "¿Qué parte del cerebro controla el equilibrio?",
+        options: ["Cerebro", "Cerebelo", "Bulbo raquídeo", "Hipotálamo"],
+        correct: 1
+    },
+    
+    // Más preguntas variadas
+    {
+        question: "¿Cuántos dientes tiene un adulto?",
+        options: ["28", "32", "30", "36"],
+        correct: 1
+    },
+    {
+        question: "¿Quién descubrió la penicilina?",
+        options: ["Marie Curie", "Louis Pasteur", "Alexander Fleming", "Joseph Lister"],
+        correct: 2
+    },
+    {
+        question: "¿Cuántos elementos químicos hay en la tabla periódica?",
+        options: ["104", "118", "110", "120"],
+        correct: 1
+    },
+    {
+        question: "¿Qué animal es el símbolo de la WWF (Fondo Mundial para la Naturaleza)?",
+        options: ["Tigre", "Elefante", "Panda", "Gorila"],
+        correct: 2
+    },
+    {
+        question: "¿Cuál es el océano más grande del mundo?",
+        options: ["Atlántico", "Índico", "Pacífico", "Ártico"],
+        correct: 2
+    }
+];
+        
+// Variables del juego
+let currentScore = parseInt(sessionStorage.getItem('currentScore') || '0');
+let currentSelection = 0;
+let navigationEnabled = true;
+let currentQuestionIndex = 0;
+let askedQuestions = [];
+let totalQuestions = 5;
+const pointsPerQuestion = 100;
+
+// Función para actualizar la puntuación visual
+function updateScoreDisplay() {
+    currentScore = parseInt(sessionStorage.getItem('currentScore') || '0');
+    document.getElementById('scoreValue').textContent = `${currentScore} PUNTOS`;
+}
+
+// Mostrar puntuación inicial
+updateScoreDisplay();
+
+// Escuchar cambios en sessionStorage
+window.addEventListener('storage', function(e) {
+    if (e.key === 'currentScore') {
+        updateScoreDisplay();
+    }
+});
+
+// Escuchar cambios en sessionStorage
+window.addEventListener('storage', function(e) {
+    if (e.key === 'currentScore') {
+        updateScoreDisplay();
+    }
+});
+        
+        // Efectos de sonido
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playCorrectSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 800;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.2);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 200);
+        }
+        
+        function playIncorrectSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 400;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 300);
+        }
+        
+        function playNavigationSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 1000;
+            gainNode.gain.value = 0.1;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 100);
+        }
+        
+        function playAmbientSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 50;
+            gainNode.gain.value = 0.02;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            
+            setTimeout(() => {
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2);
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 2000);
+            }, 5000);
+        }
+        
+        // Lógica del juego
+        function selectNextQuestion() {
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * questions.length);
+            } while (askedQuestions.includes(randomIndex) && askedQuestions.length < questions.length);
+            
+            askedQuestions.push(randomIndex);
+            return questions[randomIndex];
+        }
+        
+        function displayQuestion() {
+            const question = selectNextQuestion();
+            document.getElementById('questionText').textContent = question.question;
+            
+            const options = document.querySelectorAll('.option');
+            options.forEach((option, index) => {
+                const textSpan = option.querySelector('.option-text');
+                textSpan.textContent = question.options[index];
+                option.dataset.correct = index === question.correct;
+            });
+            
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            
+            updateSelection();
+        }
+        
+        function updateSelection() {
+            const options = document.querySelectorAll('.option');
+            options.forEach((option, index) => {
+                if (index === currentSelection) {
+                    option.classList.add('selected');
+                } else {
+                    option.classList.remove('selected');
+                }
+            });
+        }
+        
+        function showPointsPopup(x, y, isCorrect) {
+            const popup = document.createElement('div');
+            popup.className = 'points-popup';
+            
+            if (isCorrect) {
+                popup.textContent = `+${pointsPerQuestion}`;
+                popup.style.color = '#00ff00';
+                popup.style.left = `${x}px`;
+                popup.style.top = `${y}px`;
+            } else {
+                popup.textContent = 'X';
+                popup.style.color = '#ff0000';
+                popup.style.left = `${x}px`;
+                popup.style.top = `${y}px`;
+            }
+            
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                document.body.removeChild(popup);
+            }, 1500);
+        }
+        
+        function updateScore(points) {
+            currentScore += points;
+            sessionStorage.setItem('currentScore', currentScore);
+            document.getElementById('scoreValue').textContent = `${currentScore} PUNTOS`;
+            
+            const scoreElement = document.getElementById('scoreValue');
+            scoreElement.classList.add('score-pulse');
+            setTimeout(() => {
+                scoreElement.classList.remove('score-pulse');
+            }, 800);
+        }
+        
+        function resetScore() {
+            currentScore = 0;
+            sessionStorage.setItem('currentScore', '0');
+            document.getElementById('scoreValue').textContent = '0 PUNTOS';
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 440;
+            gainNode.gain.value = 0.2;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(110, audioContext.currentTime + 1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 1000);
+        }
+        
+        function checkAnswer() {
+            navigationEnabled = false;
+            const selectedOption = document.querySelector('.option.selected');
+            const isCorrect = selectedOption.dataset.correct === 'true';
+            
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => {
+                if (option.dataset.correct === 'true') {
+                    option.classList.add('correct');
+                } else if (option === selectedOption && !isCorrect) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            const rect = selectedOption.getBoundingClientRect();
+            showPointsPopup(rect.left + rect.width/2, rect.top + rect.height/2, isCorrect);
+            
+            if (isCorrect) {
+                playCorrectSound();
+                updateScore(pointsPerQuestion);
+            } else {
+                playIncorrectSound();
+            }
+            
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex >= totalQuestions) {
+                    endGame();
+                } else {
+                    resetQuestion();
+                    displayQuestion();
+                    navigationEnabled = true;
+                }
+            }, 2000);
+        }
+        
+        function resetQuestion() {
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => {
+                option.classList.remove('correct', 'incorrect', 'selected');
+            });
+            currentSelection = 0;
+        }
+        
+        function endGame() {
+            const gameContainer = document.getElementById('gameContainer');
+            gameContainer.innerHTML = `
+                <div class="game-over">
+                    <h2>¡TRIVIA COMPLETADA!</h2>
+                    <p class="final-score">Puntuación Final: ${currentScore} puntos</p>
+                    <p>Respondiste ${askedQuestions.length} preguntas</p>
+                </div>
+            `;
+            navigationEnabled = false;
+        }
+        
+        // Navegación con teclado
+        document.addEventListener('keydown', (e) => {
+            if (!navigationEnabled) {
+                if (e.key === 'Enter') {
+                    window.location.href = 'index.html';
+                }
+                return;
+            }
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    e.preventDefault();
+                    currentSelection = (currentSelection - 1 + 4) % 4;
+                    updateSelection();
+                    playNavigationSound();
+                    break;
+                    
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    e.preventDefault();
+                    currentSelection = (currentSelection + 1) % 4;
+                    updateSelection();
+                    playNavigationSound();
+                    break;
+                    
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    e.preventDefault();
+                    if (currentSelection >= 2) {
+                        currentSelection -= 2;
+                    }
+                    updateSelection();
+                    playNavigationSound();
+                    break;
+                    
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    e.preventDefault();
+                    if (currentSelection < 2) {
+                        currentSelection += 2;
+                    }
+                    updateSelection();
+                    playNavigationSound();
+                    break;
+                    
+                case 'Enter':
+                case ' ':
+                    e.preventDefault();
+                    checkAnswer();
+                    break;
+                    
+                case 'Escape':
+                    window.location.href = 'index.html';
+                    break;
+            }
+        });
+        
+        // Código para el mouse
+        const options = document.querySelectorAll('.option');
+        options.forEach((option, index) => {
+            option.addEventListener('mouseenter', () => {
+                if (!navigationEnabled) return;
+                currentSelection = index;
+                updateSelection();
+                playNavigationSound();
+            });
+            
+            option.addEventListener('click', () => {
+                if (!navigationEnabled) return;
+                currentSelection = index;
+                updateSelection();
+                checkAnswer();
+            });
+        });
+        
+        // Códigos secretos
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    resetScore();
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        });
+        
+        // Texto RESET
+        const resetCode = ['r', 'e', 's', 'e', 't'];
+        let resetIndex = 0;
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === resetCode[resetIndex]) {
+                resetIndex++;
+                if (resetIndex === resetCode.length) {
+                    resetScore();
+                    resetIndex = 0;
+                }
+            } else {
+                resetIndex = 0;
+            }
+        });
+        
+        // Texto RETURN o BACK
+let returnText = '';
+
+document.addEventListener('keydown', (e) => {
+    if (e.key.length === 1) {
+        returnText += e.key.toLowerCase();
+        
+        if (returnText.includes('return') || returnText.includes('back')) {
+            // Asegurarse de que al regresar se recargue la página
+            sessionStorage.setItem('shouldReload', 'true');
+            window.location.href = 'index.html';
+        } else if (returnText.length > 6) {
+            returnText = returnText.slice(-6);
+        }
+    }
+});
+        
+        // Inicialización
+        window.addEventListener('load', () => {
+            displayQuestion();
+            
+            // Inicializar sonido ambiente
+            document.addEventListener('click', () => {
+                playAmbientSound();
+                setInterval(playAmbientSound, 7000);
+            }, { once: true });
+        });
+// Verificar si se debe recargar la página (viene de haber cambiado puntuación)
+window.addEventListener('pageshow', function(e) {
+    if (sessionStorage.getItem('shouldReload') === 'true') {
+        sessionStorage.removeItem('shouldReload');
+        window.location.reload();
+    }
+});
+// SOLUCIÓN ROBUSTA PARA SINCRONIZACIÓN DE PUNTUACIÓN
+// Copia y pega este código AL FINAL de trivia.html
+
+// Variables para sincronización
+let lastKnownScore = currentScore;
+let checkInterval;
+
+// Función principal de sincronización
+function syncScore() {
+    const newScore = parseInt(sessionStorage.getItem('currentScore') || '0');
+    if (newScore !== currentScore) {
+        console.log(`Puntuación sincronizada: ${currentScore} → ${newScore}`);
+        currentScore = newScore;
+        document.getElementById('scoreValue').textContent = `${currentScore} PUNTOS`;
+        lastKnownScore = newScore;
+        
+        // Animar el cambio
+        const scoreElement = document.getElementById('scoreValue');
+        scoreElement.classList.add('score-pulse');
+        setTimeout(() => {
+            scoreElement.classList.remove('score-pulse');
+        }, 800);
+    }
+}
+
+// Verificar puntuación cada 500ms
+checkInterval = setInterval(syncScore, 500);
+
+// Sincronizar al enfocar la ventana
+window.addEventListener('focus', () => {
+    console.log('Ventana enfocada - sincronizando puntuación');
+    syncScore();
+});
+
+// Sincronizar al recibir mensajes
+window.addEventListener('message', (e) => {
+    if (e.data === 'syncScore') {
+        syncScore();
+    }
+});
+
+// Sincronizar cuando cambia sessionStorage
+window.addEventListener('storage', (e) => {
+    if (e.key === 'currentScore') {
+        console.log('Storage event detectado');
+        syncScore();
+    }
+});
+
+// Detectar cambios específicos en reset
+document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'r' || e.key.toLowerCase() === 'a') {
+        setTimeout(syncScore, 100);
+    }
+});
+
+// Limpiar interval al salir
+window.addEventListener('beforeunload', () => {
+    clearInterval(checkInterval);
+});
+
+// Sincronización inicial
+setTimeout(syncScore, 1000);
+
+console.log('Sistema de sincronización de puntuación activado');
+// Verificar si se debe recargar la página (viene de haber cambiado puntuación)
+window.addEventListener('pageshow', function(e) {
+    if (sessionStorage.getItem('shouldReload') === 'true') {
+        sessionStorage.removeItem('shouldReload');
+        window.location.reload();
+    }
+});
+// Sistema de detección de reseteo global
+setInterval(() => {
+    const newScore = parseInt(sessionStorage.getItem('currentScore') || '0');
+    if (newScore === 0 && currentScore !== 0) {
+        console.log('Detectado reseteo global - Reiniciando juego');
+        window.location.reload(); // Recargar la página completamente
+    }
+}, 500);
+    </script>
+</body>
+</html>

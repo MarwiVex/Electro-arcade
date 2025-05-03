@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clasificación - Electro Arcade</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        body {
+            background-color: #1a0d1a;
+            color: #f8c100;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .circuit-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(30, 10, 30, 0.2),
+                rgba(30, 10, 30, 0.2) 10px,
+                rgba(30, 10, 30, 0.3) 10px,
+                rgba(30, 10, 30, 0.3) 20px
+            );
+            z-index: -1;
+        }
+        
+        .game-container {
+            width: 90%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(to right, #f8c100, #ffdd57);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(248, 193, 0, 0.5);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ffdd57;
+            text-align: center;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        
+        .score-board {
+            background-color: rgba(30, 10, 30, 0.9);
+            border: 4px solid #f8c100;
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-height: 500px;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 30px rgba(248, 193, 0, 0.5);
+            scroll-behavior: smooth;
+        }
+        
+        .leaderboard-header {
+            display: grid;
+            grid-template-columns: 80px 2fr 1fr;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8c100;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .score-entry {
+            display: grid;
+            grid-template-columns: 80px 2fr 1fr;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(248, 193, 0, 0.3);
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease forwards;
+        }
+        
+        .score-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .score-entry:hover {
+            transform: translateX(5px);
+            background: rgba(248, 193, 0, 0.1);
+        }
+        
+        .rank {
+            text-align: center;
+            font-weight: 900;
+            font-size: 1.8rem;
+        }
+        
+        .player-name {
+            padding-left: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .score {
+            text-align: right;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+        
+        /* Estilos para top 3 */
+        .rank-1 {
+            color: #ffd700;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+        }
+        
+        .rank-1 .player-name {
+            color: #ffd700;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .rank-2 {
+            color: #c0c0c0;
+            text-shadow: 0 0 15px rgba(192, 192, 192, 0.8);
+        }
+        
+        .rank-2 .player-name {
+            color: #c0c0c0;
+            font-weight: 800;
+        }
+        
+        .rank-3 {
+            color: #cd7f32;
+            text-shadow: 0 0 15px rgba(205, 127, 50, 0.8);
+        }
+        
+        .rank-3 .player-name {
+            color: #cd7f32;
+            font-weight: 800;
+        }
+        
+        .name-input-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .name-input-container.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .name-input-box {
+            background-color: rgba(30, 10, 30, 0.95);
+            border: 4px solid #f8c100;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            animation: popIn 0.4s ease forwards;
+        }
+        
+        .name-input-label {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            color: #f8c100;
+        }
+        
+        .name-input {
+            background: transparent;
+            border: 2px solid #f8c100;
+            border-radius: 10px;
+            color: #f8c100;
+            font-size: 1.8rem;
+            padding: 15px;
+            text-align: center;
+            width: 400px;
+            outline: none;
+            caret-color: #f8c100;
+            letter-spacing: 2px;
+        }
+        
+        .name-input:focus {
+            box-shadow: 0 0 20px rgba(248, 193, 0, 0.5);
+            border-color: #ffdd57;
+        }
+        
+        .current-score-display {
+            margin-bottom: 30px;
+            font-size: 2rem;
+            color: #ffdd57;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .stats-panel {
+            background-color: rgba(30, 10, 30, 0.9);
+            border: 4px solid #f8c100;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 30px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(248, 193, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #f8c100;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #ffdd57;
+            text-transform: uppercase;
+        }
+        
+        .new-record {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-weight: 900;
+            color: #00ff00;
+            text-shadow: 0 0 40px rgba(0, 255, 0, 0.8);
+            animation: recordAnimation 1s ease forwards;
+            pointer-events: none;
+            z-index: 2000;
+        }
+        
+        .circuit-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #f8c100;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(248, 193, 0, 0.7);
+            z-index: 2;
+        }
+        
+        .circuit-line {
+            position: absolute;
+            background-color: #f8c100;
+            opacity: 0.7;
+            z-index: -1;
+        }
+        
+        .h-line {
+            height: 3px;
+            width: 100px;
+        }
+        
+        .v-line {
+            width: 3px;
+            height: 100px;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #f8c100;
+            border-radius: 50%;
+            opacity: 0;
+        }
+        
+        .scroll-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #f8c100;
+            font-size: 1.2rem;
+            animation: bounce 2s infinite ease-in-out;
+        }
+        
+        /* Animaciones */
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+                box-shadow: 0 0 5px rgba(248, 193, 0, 0.3);
+            }
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 15px rgba(248, 193, 0, 0.7);
+            }
+            100% {
+                opacity: 0.5;
+                box-shadow: 0 0 5px rgba(248, 193, 0, 0.3);
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes popIn {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0) translateX(-50%);
+            }
+            40% {
+                transform: translateY(-10px) translateX(-50%);
+            }
+            60% {
+                transform: translateY(-5px) translateX(-50%);
+            }
+        }
+        
+        @keyframes recordAnimation {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+                color: #00ff00;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.5);
+                opacity: 1;
+                color: #00ff00;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+                color: #00ff00;
+            }
+        }
+        
+        @keyframes sparkleAnimation {
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .score-entry {
+                grid-template-columns: 60px 2fr 1fr;
+            }
+            
+            .name-input {
+                width: 300px;
+                font-size: 1.4rem;
+            }
+            
+            .stats-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="circuit-background"></div>
+    
+    <div class="game-container">
+        <h1 class="title">CLASIFICACIÓN</h1>
+        <p class="subtitle">HALL DE LA FAMA ELECTRÓNICA</p>
+        
+        <div class="score-board" id="scoreBoard">
+            <div class="leaderboard-header">
+                <div>RANGO</div>
+                <div>JUGADOR</div>
+                <div>PUNTOS</div>
+            </div>
+            <div id="scoreEntries">
+                <!-- Las entradas se generarán dinámicamente -->
+            </div>
+            <div class="scroll-indicator">
+                <i class="fas fa-chevron-down"></i> DESLIZA PARA VER MÁS <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+        
+        <div class="stats-panel" id="statsPanel">
+            <div class="stat-item">
+                <div class="stat-value" id="totalGames">0</div>
+                <div class="stat-label">TOTAL PARTIDAS</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="averageScore">0</div>
+                <div class="stat-label">PROMEDIO</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="highestScore">0</div>
+                <div class="stat-label">RÉCORD</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="name-input-container" id="nameInputContainer">
+        <div class="name-input-box">
+            <div class="name-input-label">¡NUEVA PUNTUACIÓN!</div>
+            <div class="current-score-display" id="currentScoreDisplay">0 PUNTOS</div>
+            <input type="text" class="name-input" id="nameInput" maxlength="10" placeholder="TU NOMBRE">
+        </div>
+    </div>
+    
+    <!-- Elementos decorativos de circuito -->
+    <div class="circuit-node pulse" style="top: 5%; left: 5%;"></div>
+    <div class="circuit-node pulse" style="top: 5%; right: 5%;"></div>
+    <div class="circuit-node pulse" style="bottom: 5%; left: 5%;"></div>
+    <div class="circuit-node pulse" style="bottom: 5%; right: 5%;"></div>
+    
+    <div class="circuit-line h-line pulse" style="top: 10%; left: 0; width: 150px;"></div>
+    <div class="circuit-line v-line pulse" style="top: 0; right: 20%; height: 120px;"></div>
+    <div class="circuit-line h-line pulse" style="bottom: 15%; right: 0; width: 100px;"></div>
+    <div class="circuit-line v-line pulse" style="bottom: 0; left: 15%; height: 100px;"></div>
+    
+    <script>
+        // Variables globales
+        let currentScore = parseInt(sessionStorage.getItem('currentScore') || '0');
+        let isEnteringName = false;
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Cargar clasificación desde localStorage
+        let leaderboard = JSON.parse(localStorage.getItem('arcadeLeaderboard') || '[]');
+        
+        // Efectos de sonido
+        function playNavigationSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 1000;
+            gainNode.gain.value = 0.1;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 100);
+        }
+        
+        function playSuccessSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 800;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.2);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 500);
+        }
+        
+        function playRecordSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'square';
+            oscillator.frequency.value = 1000;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    oscillator.frequency.value = 1000 + (i * 200);
+                }, i * 100);
+            }
+            
+            setTimeout(() => {
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 1000);
+            }, 500);
+        }
+        
+        function playAmbientSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 50;
+            gainNode.gain.value = 0.02;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            
+            setTimeout(() => {
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2);
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 2000);
+            }, 5000);
+        }
+        
+        function playTypeSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 600;
+            gainNode.gain.value = 0.1;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.05);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 50);
+        }
+        
+        // Crear chispas aleatorias
+        function createSparkle() {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            
+            sparkle.style.left = `${x}px`;
+            sparkle.style.top = `${y}px`;
+            
+            document.body.appendChild(sparkle);
+            sparkle.style.animation = `sparkleAnimation ${Math.random() * 2 + 1}s ease`;
+            
+            setTimeout(() => {
+                document.body.removeChild(sparkle);
+            }, 3000);
+        }
+        
+        setInterval(createSparkle, 1000);
+        
+        // Renderizar clasificación
+        function renderLeaderboard() {
+            const container = document.getElementById('scoreEntries');
+            container.innerHTML = '';
+            
+            // Ordenar por puntuación (descendente)
+            const sortedLeaderboard = [...leaderboard].sort((a, b) => b.score - a.score);
+            
+            // Top 10
+            sortedLeaderboard.slice(0, 10).forEach((entry, index) => {
+                const entryElement = document.createElement('div');
+                entryElement.className = 'score-entry';
+                
+                if (index < 3) {
+                    entryElement.classList.add(`rank-${index + 1}`);
+                }
+                
+                entryElement.innerHTML = `
+                    <div class="rank">#${index + 1}</div>
+                    <div class="player-name">${entry.name}</div>
+                    <div class="score">${entry.score}</div>
+                `;
+                
+                container.appendChild(entryElement);
+            });
+            
+            // Actualizar estadísticas
+            updateStats();
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            const totalGames = leaderboard.length;
+            const averageScore = totalGames > 0 ? 
+                Math.round(leaderboard.reduce((acc, curr) => acc + curr.score, 0) / totalGames) : 0;
+            const highestScore = totalGames > 0 ? 
+                Math.max(...leaderboard.map(entry => entry.score)) : 0;
+            
+            document.getElementById('totalGames').textContent = totalGames;
+            document.getElementById('averageScore').textContent = averageScore;
+            document.getElementById('highestScore').textContent = highestScore;
+        }
+        
+        // Mostrar input de nombre
+        function showNameInput() {
+            if (currentScore <= 0) return;
+            
+            isEnteringName = true;
+            const container = document.getElementById('nameInputContainer');
+            const display = document.getElementById('currentScoreDisplay');
+            
+            display.textContent = `${currentScore} PUNTOS`;
+            container.classList.add('active');
+            
+            setTimeout(() => {
+                document.getElementById('nameInput').focus();
+            }, 100);
+        }
+        
+        // Guardar puntuación
+        function saveScore(name) {
+            if (!name || currentScore <= 0) return;
+            
+            const newEntry = {
+                name: name.toUpperCase(),
+                score: currentScore,
+                date: new Date().toISOString()
+            };
+            
+            leaderboard.push(newEntry);
+            localStorage.setItem('arcadeLeaderboard', JSON.stringify(leaderboard));
+            
+            // Verificar si es récord
+            const isNewRecord = currentScore > parseInt(document.getElementById('highestScore').textContent);
+            if (isNewRecord) {
+                showNewRecord();
+            }
+            
+            playSuccessSound();
+            renderLeaderboard();
+            
+            // Resetear puntuación
+            currentScore = 0;
+            sessionStorage.setItem('currentScore', '0');
+            
+            const container = document.getElementById('nameInputContainer');
+            container.classList.remove('active');
+            isEnteringName = false;
+        }
+        
+        // Mostrar nuevo récord
+        function showNewRecord() {
+            const recordElement = document.createElement('div');
+            recordElement.className = 'new-record';
+            recordElement.textContent = '¡NUEVO RÉCORD!';
+            
+            document.body.appendChild(recordElement);
+            playRecordSound();
+            
+            // Crear muchas chispas
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    createSparkle();
+                }, i * 100);
+            }
+            
+            setTimeout(() => {
+                document.body.removeChild(recordElement);
+            }, 2000);
+        }
+        
+        // Navegación con teclado
+        document.addEventListener('keydown', (e) => {
+            if (isEnteringName) {
+                if (e.key === 'Enter') {
+                    const name = document.getElementById('nameInput').value;
+                    if (name.trim()) {
+                        saveScore(name.trim());
+                    }
+                } else if (e.key === 'Escape') {
+                    document.getElementById('nameInputContainer').classList.remove('active');
+                    isEnteringName = false;
+                } else if (e.key.length === 1) {
+                    playTypeSound();
+                }
+                return;
+            }
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    e.preventDefault();
+                    const scoreBoard = document.getElementById('scoreBoard');
+                    scoreBoard.scrollTop -= 50;
+                    playNavigationSound();
+                    break;
+                    
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    e.preventDefault();
+                    const scoreBoardDown = document.getElementById('scoreBoard');
+                    scoreBoardDown.scrollTop += 50;
+                    playNavigationSound();
+                    break;
+                    
+                case 'Enter':
+                case ' ':
+                    if (currentScore > 0) {
+                        showNameInput();
+                    }
+                    break;
+                    
+                case 'Escape':
+                    window.location.href = 'index.html';
+                    break;
+            }
+        });
+        
+        // Códigos secretos
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+        
+        const resetCode = ['r', 'e', 's', 'e', 't'];
+        let resetIndex = 0;
+        
+        document.addEventListener('keydown', (e) => {
+            // Código Konami
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    resetScore();
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+            
+            // Código RESET
+            if (e.key.toLowerCase() === resetCode[resetIndex]) {
+                resetIndex++;
+                if (resetIndex === resetCode.length) {
+                    resetScore();
+                    resetIndex = 0;
+                }
+            } else {
+                resetIndex = 0;
+            }
+        });
+        
+        // Resetear puntuación
+        function resetScore() {
+            currentScore = 0;
+            sessionStorage.setItem('currentScore', '0');
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 440;
+            gainNode.gain.value = 0.2;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(110, audioContext.currentTime + 1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 1000);
+            
+            // Crear muchas chispas
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    createSparkle();
+                }, i * 50);
+            }
+        }
+        
+        // Detectar RETURN o BACK
+        let returnText = '';
+        
+        document.addEventListener('keydown', (e) => {
+            if (isEnteringName) return;
+            
+            if (e.key.length === 1) {
+                returnText += e.key.toLowerCase();
+                
+                if (returnText.includes('return') || returnText.includes('back')) {
+                    window.location.href = 'index.html';
+                } else if (returnText.length > 6) {
+                    returnText = returnText.slice(-6);
+                }
+            }
+        });
+        
+        // Inicialización
+        window.addEventListener('load', () => {
+            renderLeaderboard();
+            
+            // Mostrar input de nombre si hay puntuación
+            if (currentScore > 0) {
+                setTimeout(() => {
+                    showNameInput();
+                }, 500);
+            }
+            
+            // Inicializar sonido ambiente
+            document.addEventListener('click', () => {
+                playAmbientSound();
+                setInterval(playAmbientSound, 7000);
+            }, { once: true });
+        });
+        
+        // Debug: exportar/importar leaderboard
+        window.exportLeaderboard = () => {
+            console.log(JSON.stringify(leaderboard, null, 2));
+        };
+        
+        window.importLeaderboard = (data) => {
+            try {
+                leaderboard = JSON.parse(data);
+                localStorage.setItem('arcadeLeaderboard', JSON.stringify(leaderboard));
+                renderLeaderboard();
+                console.log('Leaderboard importado exitosamente');
+            } catch (e) {
+                console.error('Error al importar leaderboard:', e);
+            }
+        };
+    </script>
+</body>
+</html>

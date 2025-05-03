@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Máquina Arcade Electrónica</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        body {
+            background-color: #1a0d1a;
+            color: #f8c100;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .circuit-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(30, 10, 30, 0.2),
+                rgba(30, 10, 30, 0.2) 10px,
+                rgba(30, 10, 30, 0.3) 10px,
+                rgba(30, 10, 30, 0.3) 20px
+            );
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .title {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 20px;
+            position: relative;
+        }
+        
+        .title h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(to right, #f8c100, #ffdd57);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(248, 193, 0, 0.5);
+            margin-bottom: 10px;
+        }
+        
+        .title h2 {
+            font-size: 1.5rem;
+            color: #f8c100;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+        
+        .games-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            flex-grow: 1;
+            align-content: center;
+        }
+        
+        .game-button {
+            width: 220px;
+            height: 220px;
+            background-color: rgba(30, 10, 30, 0.8);
+            border: 3px solid #f8c100;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(248, 193, 0, 0.3);
+            z-index: 1;
+        }
+        
+        .game-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(248, 193, 0, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+            z-index: -1;
+        }
+        
+        .game-button::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 1px dashed rgba(248, 193, 0, 0.5);
+            border-radius: 15px;
+            z-index: -1;
+        }
+        
+        .game-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px rgba(248, 193, 0, 0.5);
+        }
+        
+        .game-button:hover::before {
+            background: radial-gradient(circle, rgba(248, 193, 0, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+        }
+        
+        .game-button:hover .game-icon {
+            transform: scale(1.1);
+        }
+        
+        .game-button:hover .circuit-line {
+            opacity: 1;
+        }
+        
+        .game-icon {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(30, 10, 30, 0.9);
+            border: 2px solid #f8c100;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .game-icon i {
+            font-size: 2.5rem;
+            color: #f8c100;
+        }
+        
+        .game-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f8c100;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .circuit-line {
+            position: absolute;
+            background-color: #f8c100;
+            opacity: 0.7;
+            transition: all 0.5s ease;
+        }
+        
+        /* Líneas horizontales */
+        .h-line {
+            height: 3px;
+            width: 100px;
+        }
+        
+        /* Líneas verticales */
+        .v-line {
+            width: 3px;
+            height: 100px;
+        }
+        
+        .circuit-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #f8c100;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(248, 193, 0, 0.7);
+            z-index: 2;
+        }
+        
+        .star {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: transparent;
+            transform: rotate(45deg);
+            z-index: 2;
+        }
+        
+        .star::before, .star::after {
+            content: '';
+            position: absolute;
+            background-color: #f8c100;
+        }
+        
+        .star::before {
+            width: 12px;
+            height: 3px;
+            top: 4.5px;
+            left: 0;
+        }
+        
+        .star::after {
+            width: 3px;
+            height: 12px;
+            top: 0;
+            left: 4.5px;
+        }
+        
+        .score-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .score-counter i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .score-value {
+            background-color: rgba(30, 10, 30, 0.8);
+            border: 2px solid #f8c100;
+            border-radius: 10px;
+            padding: 5px 15px;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 1rem;
+            color: rgba(248, 193, 0, 0.7);
+            letter-spacing: 1px;
+            position: relative;
+        }
+        
+        .circuit-line-animated {
+            position: absolute;
+            background-color: #f8c100;
+            opacity: 0.7;
+            z-index: -1;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #f8c100;
+            border-radius: 50%;
+            opacity: 0;
+        }
+        
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+                box-shadow: 0 0 5px rgba(248, 193, 0, 0.3);
+            }
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 15px rgba(248, 193, 0, 0.7);
+            }
+            100% {
+                opacity: 0.5;
+                box-shadow: 0 0 5px rgba(248, 193, 0, 0.3);
+            }
+        }
+        
+        @keyframes sparkleAnimation {
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        /* Media queries para responsividad */
+        @media (max-width: 900px) {
+            .title h1 {
+                font-size: 2.5rem;
+            }
+            
+            .title h2 {
+                font-size: 1.2rem;
+            }
+            
+            .games-container {
+                gap: 20px;
+            }
+            
+            .game-button {
+                width: 180px;
+                height: 180px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .title h1 {
+                font-size: 2rem;
+            }
+            
+            .title h2 {
+                font-size: 1rem;
+            }
+            
+            .games-container {
+                gap: 15px;
+            }
+            
+            .game-button {
+                width: 140px;
+                height: 140px;
+            }
+            
+            .game-icon {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .game-icon i {
+                font-size: 1.8rem;
+            }
+            
+            .game-title {
+                font-size: 0.9rem;
+            }
+        }
+
+        .game-button.selected {
+    border-color: #ff4500;
+    box-shadow: 0 0 40px rgba(255, 69, 0, 0.6), inset 0 0 30px rgba(255, 69, 0, 0.8);
+    background: rgba(30, 10, 30, 1);
+}
+
+.game-button.selected .game-icon {
+    border-color: #ff4500;
+    box-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+}
+
+.game-button.selected .game-icon i {
+    color: #ff4500;  /* Esta es la línea que necesitas agregar */
+}
+
+.game-button.selected .game-title {
+    color: #ff4500;
+    text-shadow: 0 0 10px rgba(255, 69, 0, 0.8);
+}
+
+.game-button.selected::before {
+    background: radial-gradient(circle, rgba(255, 69, 0, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
+}
+/* Estilos para las líneas de circuito dentro del botón seleccionado */
+.game-button.selected .circuit-line {
+    background-color: #ff4500;
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(255, 69, 0, 0.8);
+}
+
+/* Estilos para los nodos de circuito dentro del botón seleccionado */
+.game-button.selected .circuit-node {
+    background-color: #ff4500;
+    box-shadow: 0 0 15px rgba(255, 69, 0, 1);
+}
+
+/* Animación para tecla presionada */
+.key-pressed {
+    transform: scale(0.95);
+    box-shadow: inset 0 0 30px rgba(248, 193, 0, 0.8);
+}
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="circuit-background"></div>
+    
+    <div class="container">
+        <div class="title fade-in-up" style="animation-delay: 0.1s;">
+            <h1>ELECTRO ARCADE</h1>
+            <h2>Máquina de Desafíos Eléctricos</h2>
+        </div>
+        
+        <div class="games-container">
+            <div class="game-button fade-in-up" style="animation-delay: 0.2s;" onclick="selectGame('ruleta')">
+                <div class="circuit-line h-line" style="top: 50px; right: -50px;"></div>
+                <div class="circuit-line v-line" style="top: -50px; left: 50%;"></div>
+                <div class="circuit-node" style="top: 50px; right: -6px;"></div>
+                <div class="circuit-node" style="top: -6px; left: 50%;"></div>
+                <div class="game-icon">
+                    <i class="fas fa-dharmachakra"></i>
+                </div>
+                <div class="game-title">Ruleta</div>
+            </div>
+            
+            <div class="game-button fade-in-up" style="animation-delay: 0.3s;" onclick="selectGame('trivia')">
+                <div class="circuit-line h-line" style="top: 50px; left: -50px;"></div>
+                <div class="circuit-line v-line" style="bottom: -50px; left: 50%;"></div>
+                <div class="circuit-node" style="top: 50px; left: -6px;"></div>
+                <div class="circuit-node" style="bottom: -6px; left: 50%;"></div>
+                <div class="game-icon">
+                    <i class="fas fa-question"></i>
+                </div>
+                <div class="game-title">Trivia</div>
+            </div>
+            
+            <div class="game-button fade-in-up" style="animation-delay: 0.4s;" onclick="selectGame('detector')">
+                <div class="circuit-line h-line" style="bottom: 50px; right: -50px;"></div>
+                <div class="circuit-line v-line" style="top: -50px; right: 50px;"></div>
+                <div class="circuit-node" style="bottom: 50px; right: -6px;"></div>
+                <div class="circuit-node" style="top: -6px; right: 50px;"></div>
+                <div class="game-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <div class="game-title">Detector</div>
+            </div>
+            
+            <div class="game-button fade-in-up" style="animation-delay: 0.5s;" onclick="selectGame('resistencia')">
+                <div class="circuit-line h-line" style="bottom: 50px; left: -50px;"></div>
+                <div class="circuit-line v-line" style="bottom: -50px; right: 50px;"></div>
+                <div class="circuit-node" style="bottom: 50px; left: -6px;"></div>
+                <div class="circuit-node" style="bottom: -6px; right: 50px;"></div>
+                <div class="game-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="game-title">Resistencia</div>
+            </div>
+            
+            <div class="game-button fade-in-up" style="animation-delay: 0.7s;" onclick="selectGame('loteria')">
+                <div class="circuit-line h-line" style="top: 150px; left: -50px;"></div>
+                <div class="circuit-line v-line" style="top: 150px; left: -50px; height: 50px;"></div>
+                <div class="circuit-node" style="top: 150px; left: -6px;"></div>
+                <div class="circuit-node" style="top: 200px; left: -6px;"></div>
+                <div class="game-icon">
+                    <i class="fas fa-dice"></i>
+                </div>
+                <div class="game-title">Lotería</div>
+            </div>
+
+            <div class="game-button fade-in-up" style="animation-delay: 0.6s;" onclick="selectGame('clasificacion')">
+                <div class="circuit-line h-line" style="top: 150px; right: -50px;"></div>
+                <div class="circuit-line v-line" style="top: 150px; right: -50px; height: 50px;"></div>
+                <div class="circuit-node" style="top: 150px; right: -6px;"></div>
+                <div class="circuit-node" style="top: 200px; right: -6px;"></div>
+                <div class="game-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="game-title">Clasificación</div>
+            </div>
+        </div>
+        
+        <div class="footer fade-in-up" style="animation-delay: 0.8s;">
+            PRESIONA UN JUEGO PARA COMENZAR
+        </div>
+        
+        <div class="score-counter fade-in-up" style="animation-delay: 0.9s;">
+            <i class="fas fa-plug"></i>
+            <div class="score-value">0 PUNTOS</div>
+        </div>
+    </div>
+    
+    <!-- Elementos decorativos de circuito -->
+    <div class="circuit-node pulse" style="top: 10%; left: 10%;"></div>
+    <div class="circuit-node pulse" style="top: 15%; right: 15%;"></div>
+    <div class="circuit-node pulse" style="bottom: 10%; left: 20%;"></div>
+    <div class="circuit-node pulse" style="bottom: 25%; right: 10%;"></div>
+    
+    <div class="star" style="top: 30%; left: 5%;"></div>
+    <div class="star" style="top: 70%; right: 7%;"></div>
+    <div class="star" style="bottom: 15%; left: 30%;"></div>
+    <div class="star" style="top: 20%; right: 25%;"></div>
+    
+    <div class="circuit-line-animated h-line pulse" style="top: 20%; left: 0; width: 150px;"></div>
+    <div class="circuit-line-animated v-line pulse" style="top: 0; right: 30%; height: 120px;"></div>
+    <div class="circuit-line-animated h-line pulse" style="bottom: 25%; right: 0; width: 100px;"></div>
+    <div class="circuit-line-animated v-line pulse" style="bottom: 0; left: 25%; height: 100px;"></div>
+    
+    <script>
+        // Variables de estado para navegación
+        let currentSelection = 0;
+        const gameButtons = document.querySelectorAll('.game-button');
+        let navigationEnabled = true;
+        
+        // Mapeo de juegos a sus archivos
+        const gameFiles = {
+            'ruleta': 'ruleta.html',
+            'trivia': 'trivia.html',
+            'detector': 'detector.html',
+            'resistencia': 'resistencia.html',
+            'clasificacion': 'clasificacion.html',
+            'loteria': 'loteria.html'
+        };
+        
+        // Identificar cada botón con un juego específico
+        const gamesList = ['ruleta', 'trivia', 'detector', 'resistencia', 'clasificacion', 'loteria'];
+        gameButtons.forEach((button, index) => {
+            button.dataset.game = gamesList[index];
+        });
+        
+        // Actualizar selección visual
+        function updateSelection() {
+            gameButtons.forEach((button, index) => {
+                if (index === currentSelection) {
+                    button.classList.add('selected');
+                } else {
+                    button.classList.remove('selected');
+                }
+            });
+        }
+        
+        // Efectos de sonido
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playNavigationSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 1000;
+            gainNode.gain.value = 0.1;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 100);
+        }
+        
+        function playHoverSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 1200;
+            gainNode.gain.value = 0.1;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 300);
+        }
+        
+        function playClickSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'square';
+            oscillator.frequency.value = 800;
+            gainNode.gain.value = 0.2;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+            
+            setTimeout(() => {
+                oscillator.stop();
+            }, 500);
+        }
+        
+        function playAmbientSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 50;
+            gainNode.gain.value = 0.02;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            
+            setTimeout(() => {
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2);
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 2000);
+            }, 5000);
+        }
+        
+        // Creación de chispas aleatorias
+        function createSparkle() {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            
+            sparkle.style.left = `${x}px`;
+            sparkle.style.top = `${y}px`;
+            
+            document.body.appendChild(sparkle);
+            sparkle.style.animation = `sparkleAnimation ${Math.random() * 2 + 1}s ease`;
+            
+            setTimeout(() => {
+                document.body.removeChild(sparkle);
+            }, 3000);
+        }
+        
+        setInterval(createSparkle, 1000);
+        
+        // Selección de juego (modificada para redirección)
+        function selectGame(game) {
+            playClickSound();
+            navigationEnabled = false;
+            
+            const selectedButton = gameButtons[currentSelection];
+            selectedButton.classList.add('key-pressed');
+            
+            setTimeout(() => {
+                selectedButton.classList.remove('key-pressed');
+                document.body.style.opacity = '0';
+                document.body.style.transition = 'opacity 0.5s ease';
+                
+                setTimeout(() => {
+                    // Redireccionar al archivo HTML correspondiente
+                    window.location.href = gameFiles[game];
+                }, 500);
+            }, 300);
+        }
+        
+        // Sistema de puntuación
+        let currentScore = parseInt(sessionStorage.getItem('currentScore') || '0');
+        
+        function updateScore(points) {
+            currentScore += points;
+            document.querySelector('.score-value').textContent = `${currentScore} PUNTOS`;
+            sessionStorage.setItem('currentScore', currentScore);
+            const scoreElement = document.querySelector('.score-value');
+            scoreElement.classList.add('pulse');
+            setTimeout(() => {
+                scoreElement.classList.remove('pulse');
+            }, 1000);
+        }
+        
+        function resetScore() {
+    const scoreElement = document.querySelector('.score-value');
+    scoreElement.style.backgroundColor = 'rgba(248, 193, 0, 0.4)';
+    scoreElement.style.boxShadow = '0 0 20px rgba(248, 193, 0, 1)';
+    
+    let tempScore = currentScore;
+    const interval = setInterval(() => {
+        if (tempScore <= 0) {
+            clearInterval(interval);
+            currentScore = 0;
+            sessionStorage.setItem('currentScore', '0'); // ← ESTA ES LA LÍNEA CLAVE
+            scoreElement.textContent = '0 PUNTOS';
+            
+            // Limpiar todo el estado del juego
+            sessionStorage.clear(); // ← BORRA TODO EL HISTORIAL
+            sessionStorage.setItem('currentScore', '0'); // ← ASEGURA PUNTUACIÓN 0
+            
+            setTimeout(() => {
+                scoreElement.style.backgroundColor = '';
+                scoreElement.style.boxShadow = '';
+            }, 500);
+        } else {
+            tempScore = Math.max(0, tempScore - Math.ceil(currentScore / 10));
+            scoreElement.textContent = `${tempScore} PUNTOS`;
+        }
+    }, 100);
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.value = 440;
+    gainNode.gain.value = 0.2;
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.start();
+    oscillator.frequency.exponentialRampToValueAtTime(110, audioContext.currentTime + 1);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
+    
+    setTimeout(() => {
+        oscillator.stop();
+    }, 1000);
+    
+    for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+            createSparkle();
+        }, i * 50);
+    }
+}
+        
+        // Navegación con teclado
+        document.addEventListener('keydown', (e) => {
+            if (!navigationEnabled) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    e.preventDefault();
+                    currentSelection = (currentSelection - 1 + gameButtons.length) % gameButtons.length;
+                    updateSelection();
+                    playNavigationSound();
+                    break;
+                    
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    e.preventDefault();
+                    currentSelection = (currentSelection + 1) % gameButtons.length;
+                    updateSelection();
+                    playNavigationSound();
+                    break;
+                    
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    e.preventDefault();
+                    currentSelection = (currentSelection - 3 + gameButtons.length) % gameButtons.length;
+                    updateSelection();
+                    playNavigationSound();
+                    break;
+                    
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    e.preventDefault();
+                    currentSelection = (currentSelection + 3) % gameButtons.length;
+                    updateSelection();
+                    playNavigationSound();
+                    break;
+                    
+                case 'Enter':
+                case ' ':
+                    e.preventDefault();
+                    const selectedGame = gameButtons[currentSelection].dataset.game;
+                    selectGame(selectedGame);
+                    break;
+            }
+        });
+        
+        // Códigos especiales
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+        
+        const resetCode = ['r', 'e', 's', 'e', 't'];
+        let resetIndex = 0;
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    resetScore();
+                    konamiIndex = 0;
+                    
+                    const message = document.createElement('div');
+                    message.textContent = '¡PUNTUACIÓN REINICIADA!';
+                    message.style.position = 'fixed';
+                    message.style.top = '50%';
+                    message.style.left = '50%';
+                    message.style.transform = 'translate(-50%, -50%)';
+                    message.style.backgroundColor = 'rgba(30, 10, 30, 0.8)';
+                    message.style.color = '#f8c100';
+                    message.style.padding = '20px 40px';
+                    message.style.borderRadius = '10px';
+                    message.style.fontFamily = 'Orbitron, sans-serif';
+                    message.style.fontWeight = 'bold';
+                    message.style.fontSize = '24px';
+                    message.style.zIndex = '1000';
+                    message.style.border = '2px solid #f8c100';
+                    message.style.boxShadow = '0 0 30px rgba(248, 193, 0, 0.5)';
+                    
+                    document.body.appendChild(message);
+                    
+                    setTimeout(() => {
+                        message.style.opacity = '0';
+                        message.style.transition = 'opacity 1s ease';
+                        setTimeout(() => {
+                            document.body.removeChild(message);
+                        }, 1000);
+                    }, 2000);
+                }
+            } else {
+                konamiIndex = 0;
+            }
+            
+            if (e.key.toLowerCase() === resetCode[resetIndex]) {
+                resetIndex++;
+                if (resetIndex === resetCode.length) {
+                    resetScore();
+                    resetIndex = 0;
+                }
+            } else {
+                resetIndex = 0;
+            }
+        });
+        
+        // Eventos para botones (soporte mouse)
+        gameButtons.forEach((button, index) => {
+            button.addEventListener('mouseenter', () => {
+                currentSelection = index;
+                updateSelection();
+                playHoverSound();
+                
+                const lines = button.querySelectorAll('.circuit-line');
+                lines.forEach(line => {
+                    line.style.opacity = '1';
+                    line.style.boxShadow = '0 0 10px rgba(248, 193, 0, 0.8)';
+                });
+                
+                const nodes = button.querySelectorAll('.circuit-node');
+                nodes.forEach(node => {
+                    node.style.boxShadow = '0 0 15px rgba(248, 193, 0, 1)';
+                });
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                const lines = button.querySelectorAll('.circuit-line');
+                lines.forEach(line => {
+                    line.style.opacity = '0.7';
+                    line.style.boxShadow = 'none';
+                });
+                
+                const nodes = button.querySelectorAll('.circuit-node');
+                nodes.forEach(node => {
+                    node.style.boxShadow = '0 0 10px rgba(248, 193, 0, 0.7)';
+                });
+            });
+        });
+        
+        // Inicialización
+        window.addEventListener('load', () => {
+            updateSelection(); // Seleccionar el primer juego al cargar
+            document.querySelector('.score-value').textContent = `${currentScore} PUNTOS`;
+            document.addEventListener('click', () => {
+                playAmbientSound();
+                setInterval(playAmbientSound, 7000);
+            }, { once: true });
+        });
+    </script>
+</body>
+</html>
